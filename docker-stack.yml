@@ -1,31 +1,28 @@
-version: '3.7'
-
 volumes:
-    prometheus_data: {}
-    grafana_data: {}
+  prometheus_data: {}
+  grafana_data: {}
 
 networks:
   monitor-net:
 
 services:
-
   prometheus:
-    image: prom/prometheus:v2.36.2
+    image: prom/prometheus:v3.5.0
     volumes:
       - ./prometheus/:/etc/prometheus/
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--web.enable-admin-api"
     ports:
       - 9090:9090
     depends_on:
       - cadvisor
-#      - pushgateway
+    #      - pushgateway
     networks:
       - monitor-net
     deploy:
@@ -36,14 +33,14 @@ services:
         condition: on-failure
 
   node-exporter:
-    image: quay.io/prometheus/node-exporter:latest
+    image: quay.io/prometheus/node-exporter:v1.9.1
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-    command: 
-      - '--path.procfs=/host/proc' 
-      - '--path.sysfs=/host/sys'
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
       - --collector.filesystem.ignored-mount-points
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     ports:
@@ -53,10 +50,10 @@ services:
     deploy:
       mode: global
       restart_policy:
-          condition: on-failure
+        condition: on-failure
 
   alertmanager:
-    image: prom/alertmanager
+    image: prom/alertmanager:v0.28.1
     ports:
       - 9093:9093
     volumes:
@@ -64,17 +61,17 @@ services:
     networks:
       - monitor-net
     command:
-      - '--config.file=/etc/alertmanager/config.yml'
-      - '--storage.path=/alertmanager'
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--storage.path=/alertmanager"
     deploy:
       placement:
         constraints:
-           - node.role==manager
+          - node.role==manager
       restart_policy:
-        condition: on-failure    
+        condition: on-failure
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
@@ -87,10 +84,10 @@ services:
     deploy:
       mode: global
       restart_policy:
-          condition: on-failure
+        condition: on-failure
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
     depends_on:
       - prometheus
     ports:
@@ -109,7 +106,6 @@ services:
           - node.role==manager
       restart_policy:
         condition: on-failure
-
 #  pushgateway:
 #    image: prom/pushgateway
 #    deploy:
