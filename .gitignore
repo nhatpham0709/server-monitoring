@@ -1,1 +1,3 @@
-.vscode/launch.json
+# Ignore secrets and env files
+secrets/
+.env
