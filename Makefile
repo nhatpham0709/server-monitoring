@@ -1,5 +1,5 @@
 stack-up:
-	docker stack deploy monitoring
+	docker stack deploy -c stack.yml monitoring
 
 stack-down:
 	docker stack rm monitoring

@@ -8,17 +8,16 @@ services:
       - "--providers.docker.swarmMode=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.le.acme.tlschallenge=true"
-      - "--certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL}"
-      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--log.level=debug"
+      - "--log.filePath=/var/log/traefik/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filePath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
     ports:
       - "80:80"
-      - "443:443"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./letsencrypt:/letsencrypt
     networks:
       - traefik
       - monitor-net
@@ -43,11 +42,10 @@ services:
           - node.role==manager
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.grafana.rule=Host(`YOUR_SERVER_IP`) && PathPrefix(`/grafana`)"
+        - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
         - "traefik.http.routers.grafana.entrypoints=web"
         - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-        - "traefik.http.middlewares.grafana-stripprefix.stripprefix.prefixes=/grafana"
-        - "traefik.http.routers.grafana.middlewares=grafana-stripprefix@docker"
+        - "traefik.docker.network=traefik"
       restart_policy:
         condition: on-failure
 
@@ -58,9 +56,6 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--web.console.libraries=/etc/prometheus/console_libraries"
       - "--web.console.templates=/etc/prometheus/consoles"
-      - "--storage.tsdb.retention.time=200h"
-      - "--web.enable-lifecycle"
-      - "--web.external-url=/prometheus/"
     volumes:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
@@ -72,13 +67,7 @@ services:
         constraints:
           - node.role==manager
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.prometheus.rule=Host(`YOUR_SERVER_IP`) && PathPrefix(`/prometheus`)"
-        - "traefik.http.routers.prometheus.entrypoints=web"
-        - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-        - "traefik.http.middlewares.prometheus-stripprefix.stripprefix.prefixes=/prometheus"
-        - "traefik.http.routers.prometheus.middlewares=prometheus-stripprefix@docker"
-
+        - "traefik.docker.network=traefik"
       restart_policy:
         condition: on-failure
 
@@ -158,6 +147,8 @@ services:
       placement:
         constraints:
           - node.role==manager
+      labels:
+        - "traefik.docker.network=traefik"
       restart_policy:
         condition: on-failure
 
@@ -188,5 +179,7 @@ volumes:
 networks:
   monitor-net:
     driver: overlay
+    name: inbound
   traefik:
     driver: overlay
+    name: traefik
